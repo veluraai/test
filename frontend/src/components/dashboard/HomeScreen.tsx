@@ -1,6 +1,6 @@
 import { Flame, ChevronRight, Zap, Bell, Search } from "lucide-react";
 import { useRef } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "../../../../backend/src/supabase";
 
 const subjects = [
   { name: "Maths", topic: "Quadratic Equations", progress: 65 },
@@ -16,14 +16,28 @@ const leaderboard = [
 ];
 
 interface HomeScreenProps {
-  onNotifications: () => void;
-  onSearch: () => void;
-  onUserTap: (user: { name: string; initials: string; badge: string; xp: string }) => void;
+  onNotifications?: () => void;
+  onSearch?: () => void;
+  onUserTap?: (user: { name: string; initials: string; badge: string; xp: string }) => void;
+  session?: any;
 }
 
-const HomeScreen = ({ onNotifications, onSearch, onUserTap }: HomeScreenProps) => {
-  const { username, xp, streak, badge, isGuest } = useAuth();
+const HomeScreen = ({ onNotifications, onSearch, onUserTap, session }: HomeScreenProps & { session?: any }) => {
+  const isGuest = session?.isGuest === true;
+  const userEmail = isGuest ? 'Guest User' : session?.user?.email || 'Guest User';
+  const xp = isGuest ? session?.xp ?? 0 : session?.user?.user_metadata?.xp ?? 0;
+  const streak = isGuest ? session?.streak ?? 0 : session?.user?.user_metadata?.streak ?? 0;
+  const badge = isGuest ? session?.badge ?? 'Tech_Teen' : session?.user?.user_metadata?.badge ?? 'Tech_Burner';
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = async () => {
+    if (isGuest) {
+      localStorage.removeItem('velura_guest');
+    } else {
+      await supabase.auth.signOut();
+    }
+    window.location.reload();
+  };
 
   const displayLeaderboard = isGuest
     ? leaderboard.filter((u) => !u.isUser)
@@ -31,21 +45,35 @@ const HomeScreen = ({ onNotifications, onSearch, onUserTap }: HomeScreenProps) =
 
   return (
     <div className="px-5 pb-8 space-y-6">
+      {isGuest && (
+        <div style={{ background: '#1a1a1a', borderBottom: '1px solid #A855F7', padding: '8px 16px', fontSize: '13px', color: '#ccc', textAlign: 'center' }}>
+          You're in Guest mode. Progress won't be saved.{' '}
+          <span
+            onClick={() => { localStorage.removeItem('velura_guest'); window.location.reload(); }}
+            style={{ color: '#A855F7', cursor: 'pointer', fontWeight: '600' }}
+          >
+            Create Free Account →
+          </span>
+        </div>
+      )}
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Hey, {username.split(" ")[0]} 👋</h1>
+          <h1 className="text-2xl font-bold text-foreground">Hey, {userEmail.split(" ")[0]} 👋</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {streak > 0 ? `You're on a ${streak}-day streak 🔥` : "Start your learning streak today!"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onSearch} className="flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground">
+          <button onClick={() => onSearch?.()} className="flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground">
             <Search className="h-4 w-4" />
           </button>
-          <button onClick={onNotifications} className="flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground relative">
+          <button onClick={() => onNotifications?.()} className="flex h-9 w-9 items-center justify-center rounded-xl bg-card border border-border text-muted-foreground relative">
             <Bell className="h-4 w-4" />
             <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary" />
+          </button>
+          <button onClick={handleLogout} className="text-xs text-muted-foreground hover:text-foreground px-3 py-1 rounded-lg border border-border bg-card">
+            Logout
           </button>
         </div>
       </div>
@@ -119,7 +147,7 @@ const HomeScreen = ({ onNotifications, onSearch, onUserTap }: HomeScreenProps) =
           {displayLeaderboard.map((u) => (
             <button
               key={u.rank}
-              onClick={() => !u.isUser && onUserTap({ name: u.name, initials: u.initials, badge: u.badge, xp: u.xp })}
+              onClick={() => !u.isUser && onUserTap?.({ name: u.name, initials: u.initials, badge: u.badge, xp: u.xp })}
               className={`flex items-center gap-3 px-4 py-3 w-full text-left ${u.isUser ? "bg-primary/5" : ""}`}
             >
               <span className="text-sm font-bold text-muted-foreground w-5">#{u.rank}</span>

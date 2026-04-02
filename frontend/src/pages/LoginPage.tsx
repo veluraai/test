@@ -2,14 +2,67 @@ import { useState } from "react";
 import { User, Lock, Eye, EyeOff, Zap, Shield, Flame, Brain, Award, Crown, UserCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "../../../backend/src/supabase";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [mode, setMode] = useState("login");
   const { loginAsGuest } = useAuth();
   const navigate = useNavigate();
+const handleGoogleLogin = async () => {
+  setLoading(true);
+  setError("");
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/dashboard`,
+    },
+  });
+  if (error) {
+    setError(error.message);
+    setLoading(false);
+  }
+};
+
+
+  const handleLogin = async (e) => {
+  console.log('login clicked', email, password);
+  e.preventDefault();
+  setLoading(true);
+  setError("");
+  setMessage("");
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  console.log('Supabase data:', data);
+  console.log('Supabase error:', error);
+
+  if (error) {
+    setError(error.message);
+  } else {
+    navigate("/dashboard"); // ← THIS LINE WAS MISSING
+  }
+
+  setLoading(false);
+};
+
+  const handleGuest = () => {
+    const guestData = {
+      isGuest: true,
+      guestId: 'guest_' + Math.random().toString(36).slice(2),
+      username: 'Guest User',
+      xp: 0,
+      streak: 0,
+      badge: 'Tech_Teen',
+    };
+    localStorage.setItem('velura_guest', JSON.stringify(guestData));
+    window.location.reload();
+  };
 
   const handleGuestLogin = () => {
     loginAsGuest();
@@ -158,8 +211,9 @@ const LoginPage = () => {
             </p>
           </div>
 
-          {/* Email input */}
-          <div className="mb-4">
+          <form onSubmit={handleLogin}>
+            {/* Email input */}
+            <div className="mb-4">
             <label className="block text-muted-foreground/60 text-[11px] uppercase tracking-[0.1em] mb-2 font-medium">
               Username or Email
             </label>
@@ -225,12 +279,20 @@ const LoginPage = () => {
           </div>
 
           {/* Login button */}
-          <button className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white bg-primary hover:brightness-110 hover:shadow-[0_0_24px_rgba(124,58,237,0.5)] active:scale-[0.98] transition-all text-base">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white bg-primary hover:brightness-110 hover:shadow-[0_0_24px_rgba(124,58,237,0.5)] active:scale-[0.98] transition-all text-base"
+          >
             <Zap className="w-5 h-5" />
-            Login to Velura AI
+            {loading ? 'Logging in...' : 'Login'}
           </button>
 
+          {error && <p style={{ color: 'red', marginTop: '8px', fontSize: '14px' }}>{error}</p>}
+          {message && <p style={{ color: 'green', marginTop: '8px', fontSize: '14px' }}>{message}</p>}
+
           {/* Divider */}
+          </form>
           <div className="flex items-center gap-4 my-6">
             <div className="flex-1 h-px bg-foreground/10" />
             <span className="text-muted-foreground text-xs">OR</span>
@@ -238,7 +300,8 @@ const LoginPage = () => {
           </div>
 
           {/* Google button */}
-          <button className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl bg-white text-gray-900 font-medium text-sm hover:bg-gray-100 active:scale-[0.98] transition-all">
+          
+          <button onClick={handleGoogleLogin} disabled={loading} className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl bg-white text-gray-900 font-medium text-sm hover:bg-gray-100 active:scale-[0.98] transition-all">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -250,11 +313,12 @@ const LoginPage = () => {
 
           {/* Guest button */}
           <button
-            onClick={handleGuestLogin}
+            onClick={handleGuest}
+            disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl border border-border text-muted-foreground font-medium text-sm hover:text-foreground hover:border-foreground/20 active:scale-[0.98] transition-all mt-3"
           >
             <UserCircle className="w-4 h-4" />
-            Continue as Guest
+            {loading ? 'Loading...' : 'Continue as Guest'}
           </button>
         </div>
 

@@ -1,35 +1,37 @@
-import { useEffect, useState } from 'react'
-import supabase from './supabase'
+import { useState, useEffect } from 'react'
+import { supabase } from './supabase'
+import Auth from '../../frontend/src/pages/LoginPage'
+import Home from '../../frontend/src/components/dashboard/HomeScreen'
 
-function App() {
-  const [data, setData] = useState([])
+export default function App() {
+  const [session, setSession] = useState(undefined)
 
   useEffect(() => {
-    async function fetchData() {
-      const { data, error } = await supabase
-        .from('test')
-        .select('*')
+    // Check for real Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
 
-      if (error) {
-        console.error(error)
-      } else {
-        console.log(data)
-        setData(data)
-      }
+    // Check for guest session
+    const guest = localStorage.getItem('velura_guest')
+    if (guest) {
+      setSession({ isGuest: true, ...JSON.parse(guest) })
     }
 
-    fetchData()
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setSession(session)
+      } else {
+        setSession(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  return (
-    <div>
-      <h1>Supabase Data:</h1>
+  // Show nothing while session is being determined — prevents auth screen flash
+  if (session === undefined) return null
 
-      {data.map((item, index) => (
-        <p key={index}>{item.name || "No name"}</p>
-      ))}
-    </div>
-  )
+  return session ? <Home session={session} /> : <Auth />
 }
-
-export default App

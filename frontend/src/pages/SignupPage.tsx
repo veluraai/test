@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { User, Lock, Eye, EyeOff, Zap, Mail, Brain, Flame, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "../../../backend/src/supabase";
 
 const SignupPage = () => {
   const [username, setUsername] = useState("");
@@ -10,6 +11,32 @@ const SignupPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [mode, setMode] = useState("signup");
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setError(error.message);
+    } else {
+      setMessage('Check your email to confirm your account.');
+    }
+
+    setLoading(false);
+  };
 
   return (
     <>
@@ -234,10 +261,17 @@ const SignupPage = () => {
           </div>
 
           {/* Signup button */}
-          <button className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white bg-primary hover:brightness-110 hover:shadow-[0_0_24px_rgba(124,58,237,0.5)] active:scale-[0.98] transition-all text-base">
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white bg-primary hover:brightness-110 hover:shadow-[0_0_24px_rgba(124,58,237,0.5)] active:scale-[0.98] transition-all text-base"
+          >
             <Zap className="w-5 h-5" />
-            Create Account
+            {loading ? 'Loading...' : 'Create Account'}
           </button>
+
+          {error && <p style={{ color: 'red', marginTop: '8px', fontSize: '14px' }}>{error}</p>}
+          {message && <p style={{ color: 'green', marginTop: '8px', fontSize: '14px' }}>{message}</p>}
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-6">
