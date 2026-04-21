@@ -13,9 +13,16 @@ import EditProfileScreen from "@/components/dashboard/EditProfileScreen";
 import SearchScreen from "@/components/dashboard/SearchScreen";
 import MiniProfile from "@/components/dashboard/MiniProfile";
 import GuestModal from "@/components/dashboard/GuestModal";
+import ChatPage from "./ChatPage";
 
 type Tab = "home" | "chat" | "duels" | "profile";
-type SubScreen = null | "notifications" | "settings" | "editProfile" | "search" | "miniProfile";
+type SubScreen =
+  | null
+  | "notifications"
+  | "settings"
+  | "editProfile"
+  | "search"
+  | "miniProfile";
 
 const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
   { id: "home", label: "Home", icon: Home },
@@ -54,18 +61,77 @@ const DashboardPage = () => {
   };
 
   const renderContent = () => {
-    if (subScreen === "notifications") return <NotificationsScreen onBack={() => setSubScreen(null)} />;
-    if (subScreen === "settings") return <SettingsScreen onBack={() => setSubScreen(null)} onEditProfile={() => setSubScreen("editProfile")} />;
-    if (subScreen === "editProfile") return <EditProfileScreen onBack={() => setSubScreen(subScreen === "editProfile" ? "settings" : null)} />;
-    if (subScreen === "search") return <SearchScreen onBack={() => setSubScreen(null)} onUserTap={(u) => { setMiniProfileUser(u); setSubScreen("miniProfile"); }} />;
-    if (subScreen === "miniProfile" && miniProfileUser) return <MiniProfile user={miniProfileUser} onBack={() => { setMiniProfileUser(null); setSubScreen("search"); }} />;
+    if (subScreen === "notifications") {
+      return <NotificationsScreen onBack={() => setSubScreen(null)} />;
+    }
+
+    if (subScreen === "settings") {
+      return (
+        <SettingsScreen
+          onBack={() => setSubScreen(null)}
+          onEditProfile={() => setSubScreen("editProfile")}
+        />
+      );
+    }
+
+    if (subScreen === "editProfile") {
+      return <EditProfileScreen onBack={() => setSubScreen("settings")} />;
+    }
+
+    if (subScreen === "search") {
+      return (
+        <SearchScreen
+          onBack={() => setSubScreen(null)}
+          onUserTap={(u) => {
+            setMiniProfileUser(u);
+            setSubScreen("miniProfile");
+          }}
+        />
+      );
+    }
+
+    if (subScreen === "miniProfile" && miniProfileUser) {
+      return (
+        <MiniProfile
+          user={miniProfileUser}
+          onBack={() => {
+            setMiniProfileUser(null);
+            setSubScreen("search");
+          }}
+        />
+      );
+    }
 
     switch (activeTab) {
-      case "home": return <HomeScreen onNotifications={() => setSubScreen("notifications")} onSearch={() => setSubScreen("search")} onUserTap={(u) => { setMiniProfileUser(u); setSubScreen("miniProfile"); }} />;
-      case "chat": return <ChatScreen />;
-      case "duels": return <DuelsScreen />;
-      case "profile": return <ProfileScreen onSettings={() => setSubScreen("settings")} onEditProfile={() => setSubScreen("editProfile")} onNotifications={() => setSubScreen("notifications")} />;
-      default: return null;
+      case "home":
+        return (
+          <HomeScreen
+            onNotifications={() => setSubScreen("notifications")}
+            onSearch={() => setSubScreen("search")}
+            onUserTap={(u) => {
+              setMiniProfileUser(u);
+              setSubScreen("miniProfile");
+            }}
+          />
+        );
+
+      case "chat":
+        return <ChatPage />;
+
+      case "duels":
+        return <DuelsScreen />;
+
+      case "profile":
+        return (
+          <ProfileScreen
+            onSettings={() => setSubScreen("settings")}
+            onEditProfile={() => setSubScreen("editProfile")}
+            onNotifications={() => setSubScreen("notifications")}
+          />
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -74,6 +140,7 @@ const DashboardPage = () => {
   return (
     <div className="relative min-h-screen bg-background flex flex-col max-w-[430px] mx-auto">
       <GuestBanner />
+
       <div className={`flex-1 overflow-y-auto pt-4 ${showNav ? "pb-20" : "pb-6"}`}>
         {renderContent()}
       </div>
@@ -84,6 +151,7 @@ const DashboardPage = () => {
             <div className="flex items-center justify-around py-2">
               {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
+
                 return (
                   <button
                     key={tab.id}
@@ -102,7 +170,9 @@ const DashboardPage = () => {
         </nav>
       )}
 
-      {guestModal && <GuestModal message={guestModal} onClose={() => setGuestModal(null)} />}
+      {guestModal && (
+        <GuestModal message={guestModal} onClose={() => setGuestModal(null)} />
+      )}
     </div>
   );
 };
