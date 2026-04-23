@@ -14,9 +14,7 @@ export interface GuestSession {
 interface AuthContextType {
   isGuest: boolean;
   isLoggedIn: boolean;
-  isAuthReady: boolean;
   guestSession: GuestSession | null;
-  supabaseUser: any;
   loginAsGuest: () => void;
   logout: () => Promise<void>;
   username: string;
@@ -38,64 +36,58 @@ const GUEST_KEY = "velura_guest_session";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [guestSession, setGuestSession] = useState<GuestSession | null>(null);
-  const [supabaseUser, setSupabaseUser] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [hasSupabaseSession, setHasSupabaseSession] = useState(false);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        // Restore guest session first
-        const stored = localStorage.getItem(GUEST_KEY);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            if (parsed?.isGuest) {
-              setGuestSession(parsed);
-              setIsLoggedIn(true);
-            }
-          } catch {
-            // ignore broken guest data
+      // Check for guest session first
+      const stored = localStorage.getItem(GUEST_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (parsed.isGuest) {
+            setGuestSession(parsed);
+            setIsLoggedIn(true);
+            return; // Guest mode takes precedence
           }
-        }
+        } catch {}
+      }
 
-        // Check Supabase session
+      // Check for Supabase session
+      try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
-          setSupabaseUser(data.session.user);
+          setHasSupabaseSession(true);
           setIsLoggedIn(true);
         }
-
-        // Listen to auth state changes
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          (_event, session) => {
-            if (session) {
-              setSupabaseUser(session.user);
-              setIsLoggedIn(true);
-            } else {
-              setSupabaseUser(null);
-              setIsLoggedIn(!!guestSession);
-            }
-          }
-        );
-
-        setIsAuthReady(true);
-
-        return () => {
-          authListener?.subscription.unsubscribe();
-        };
       } catch (error) {
-        console.error("Auth init error:", error);
-        setIsAuthReady(true);
+        console.error("Error checking Supabase session:", error);
       }
     };
 
-    const unsubscribe = initAuth();
+    initAuth();
+
+    // Listen to auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session) {
+          setHasSupabaseSession(true);
+          setIsLoggedIn(true);
+        } else {
+          setHasSupabaseSession(false);
+          // Keep logged in if guest session exists
+          if (!guestSession) {
+            setIsLoggedIn(false);
+          }
+        }
+      }
+    );
 
     return () => {
-      unsubscribe?.then((unsub) => unsub?.());
+      authListener?.subscription.unsubscribe();
     };
-  }, []);
+  }, [guestSession]);
 
   const loginAsGuest = () => {
     const session: GuestSession = {
@@ -115,8 +107,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     localStorage.removeItem(GUEST_KEY);
     setGuestSession(null);
-    setSupabaseUser(null);
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+    setHasSupabaseSession(false);
     setIsLoggedIn(false);
   };
 
@@ -127,12 +123,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         isGuest,
         isLoggedIn,
-        isAuthReady,
         guestSession,
-        supabaseUser,
         loginAsGuest,
         logout,
-        username: isGuest ? "Guest User" : supabaseUser?.email || "User",
+        username: isGuest ? "Guest User" : "Ankur_V",
         xp: isGuest ? 0 : 2450,
         streak: isGuest ? 0 : 5,
         badge: isGuest ? "Tech_Teen" : "Tech_Burner",
