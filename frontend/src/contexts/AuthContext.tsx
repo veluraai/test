@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/lib/supabase";
 
 export interface GuestSession {
   isGuest: true;
@@ -13,9 +14,11 @@ export interface GuestSession {
 interface AuthContextType {
   isGuest: boolean;
   isLoggedIn: boolean;
+  isAuthReady: boolean;
   guestSession: GuestSession | null;
+  supabaseUser: any;
   loginAsGuest: () => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   username: string;
   xp: number;
   streak: number;
@@ -35,19 +38,63 @@ const GUEST_KEY = "velura_guest_session";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [guestSession, setGuestSession] = useState<GuestSession | null>(null);
+  const [supabaseUser, setSupabaseUser] = useState<any>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(GUEST_KEY);
-    if (stored) {
+    const initAuth = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        if (parsed.isGuest) {
-          setGuestSession(parsed);
+        // Restore guest session first
+        const stored = localStorage.getItem(GUEST_KEY);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            if (parsed?.isGuest) {
+              setGuestSession(parsed);
+              setIsLoggedIn(true);
+            }
+          } catch {
+            // ignore broken guest data
+          }
+        }
+
+        // Check Supabase session
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          setSupabaseUser(data.session.user);
           setIsLoggedIn(true);
         }
-      } catch {}
-    }
+
+        // Listen to auth state changes
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+          (_event, session) => {
+            if (session) {
+              setSupabaseUser(session.user);
+              setIsLoggedIn(true);
+            } else {
+              setSupabaseUser(null);
+              setIsLoggedIn(!!guestSession);
+            }
+          }
+        );
+
+        setIsAuthReady(true);
+
+        return () => {
+          authListener?.subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error("Auth init error:", error);
+        setIsAuthReady(true);
+      }
+    };
+
+    const unsubscribe = initAuth();
+
+    return () => {
+      unsubscribe?.then((unsub) => unsub?.());
+    };
   }, []);
 
   const loginAsGuest = () => {
@@ -65,9 +112,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoggedIn(true);
   };
 
-  const logout = () => {
+  const logout = async () => {
     localStorage.removeItem(GUEST_KEY);
     setGuestSession(null);
+    setSupabaseUser(null);
+    await supabase.auth.signOut();
     setIsLoggedIn(false);
   };
 
@@ -78,10 +127,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         isGuest,
         isLoggedIn,
+        isAuthReady,
         guestSession,
+        supabaseUser,
         loginAsGuest,
         logout,
-        username: isGuest ? "Guest User" : "Ankur_V",
+        username: isGuest ? "Guest User" : supabaseUser?.email || "User",
         xp: isGuest ? 0 : 2450,
         streak: isGuest ? 0 : 5,
         badge: isGuest ? "Tech_Teen" : "Tech_Burner",

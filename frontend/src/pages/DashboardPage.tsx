@@ -32,7 +32,7 @@ const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
 ];
 
 const DashboardPage = () => {
-  const { isGuest } = useAuth();
+  const { isGuest, isAuthReady } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [subScreen, setSubScreen] = useState<SubScreen>(null);
   const [showOnboarding, setShowOnboarding] = useState(() => {
@@ -41,6 +41,18 @@ const DashboardPage = () => {
   });
   const [guestModal, setGuestModal] = useState<string | null>(null);
   const [miniProfileUser, setMiniProfileUser] = useState<any>(null);
+
+  // Wait for auth to be ready
+  if (!isAuthReady) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleOnboardingComplete = () => {
     localStorage.setItem("velura_onboarding_done", "true");
