@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { User, Lock, Eye, EyeOff, Zap, Mail, Brain, Flame, Crown } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "../../../backend/src/supabase";
+import { supabase } from "@/lib/supabase";
 
 const SignupPage = () => {
   const [username, setUsername] = useState("");

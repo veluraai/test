@@ -2,7 +2,7 @@ import { useState } from "react";
 import { User, Lock, Eye, EyeOff, Zap, Shield, Flame, Brain, Award, Crown, UserCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "../../../backend/src/supabase";
+import { supabase } from "@/lib/supabase";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -60,7 +60,7 @@ const handleGoogleLogin = async () => {
       streak: 0,
       badge: 'Tech_Teen',
     };
-    localStorage.setItem('velura_guest', JSON.stringify(guestData));
+    localStorage.setItem('velura_guest_session', JSON.stringify(guestData));
     window.location.reload();
   };
 

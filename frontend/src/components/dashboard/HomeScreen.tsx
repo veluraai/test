@@ -1,6 +1,6 @@
 import { Flame, ChevronRight, Zap, Bell, Search } from "lucide-react";
 import { useRef } from "react";
-import { supabase } from "../../../../backend/src/supabase";
+import { supabase } from "@/lib/supabase";
 
 const subjects = [
   { name: "Maths", topic: "Quadratic Equations", progress: 65 },
@@ -32,7 +32,7 @@ const HomeScreen = ({ onNotifications, onSearch, onUserTap, session }: HomeScree
 
   const handleLogout = async () => {
     if (isGuest) {
-      localStorage.removeItem('velura_guest');
+      localStorage.removeItem('velura_guest_session');
     } else {
       await supabase.auth.signOut();
     }
@@ -49,7 +49,7 @@ const HomeScreen = ({ onNotifications, onSearch, onUserTap, session }: HomeScree
         <div style={{ background: '#1a1a1a', borderBottom: '1px solid #A855F7', padding: '8px 16px', fontSize: '13px', color: '#ccc', textAlign: 'center' }}>
           You're in Guest mode. Progress won't be saved.{' '}
           <span
-            onClick={() => { localStorage.removeItem('velura_guest'); window.location.reload(); }}
+            onClick={() => { localStorage.removeItem('velura_guest_session'); window.location.reload(); }}
             style={{ color: '#A855F7', cursor: 'pointer', fontWeight: '600' }}
           >
             Create Free Account →
