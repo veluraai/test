@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../components/Button.jsx";
-import Card from "../components/Card.jsx";
-import Layout from "../components/Layout.jsx";
-import Input from "../components/Input.jsx";
+import Button from "../components/Button.tsx";
+import Card from "../components/Card.tsx";
+import Layout from "../components/layout/Layout.tsx";
+import Input from "../components/Input.tsx";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();

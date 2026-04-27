@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../components/Button.jsx";
-import Card from "../components/Card.jsx";
-import Layout from "../components/Layout.jsx";
-import BottomNav from "../components/BottomNav.jsx";
+import Button from "../components/Button.tsx";
+import Card from "../components/Card.tsx";
+import Layout from "../components/layout/Layout.tsx";
+import BottomNav from "../components/layout/BottomNav.tsx";
 
 const StatCard = ({ label, value, highlight }) => (
   <div

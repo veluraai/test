@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../components/Button.jsx";
-import Card from "../components/Card.jsx";
-import Input from "../components/Input.jsx";
-import Layout from "../components/Layout.jsx";
-import BottomNav from "../components/BottomNav.jsx";
+import Button from "../components/Button.tsx";
+import Card from "../components/Card.tsx";
+import Input from "../components/Input.tsx";
+import Layout from "../components/layout/Layout.tsx";
+import BottomNav from "../components/layout/BottomNav.tsx";
 
 const filterTabs = ["All", "Math", "Science", "Coding", "Logic"];
 
